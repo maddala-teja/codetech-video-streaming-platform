@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFlex HD | 50+ Premium Videos</title>
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1e1e1e;
+            --primary: #ff0000;
+            --text: #ffffff;
+            --text-secondary: #aaaaaa;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(15, 15, 15, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo { color: var(--primary); font-size: 22px; font-weight: 800; letter-spacing: -1px; }
+
+        .search-container { width: 40%; }
+        .search-bar {
+            width: 100%;
+            padding: 8px 15px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 20px;
+            color: white;
+            outline: none;
+        }
+
+        .main-content { margin-top: 80px; padding: 0 20px; }
+
+        .chips {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        .chip {
+            background: #333;
+            padding: 6px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        .chip.active { background: white; color: black; }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .card:hover { transform: translateY(-5px); }
+
+        .thumb-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #222;
+        }
+        .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .dur {
+            position: absolute;
+            bottom: 8px; right: 8px;
+            background: rgba(0,0,0,0.8);
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .meta { padding: 10px 5px; }
+        .v-title { font-weight: 600; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .v-stats { color: var(--text-secondary); font-size: 13px; }
+
+        .modal {
+            position: fixed;
+            top:0; left:0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98);
+            display: none;
+            z-index: 2000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .player-box { width: 90%; max-width: 1100px; position: relative; }
+        video { width: 100%; border-radius: 8px; box-shadow: 0 0 50px rgba(0,0,0,0.5); background: #000; }
+
+        .close-modal {
+            position: absolute;
+            top: -40px; right: 0;
+            color: white; font-size: 30px; cursor: pointer;
+        }
+
+        .video-desc { margin-top: 15px; text-align: left; width: 100%; }
+
+        .loader {
+            border: 4px solid #333;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="logo">STREAMFLEX</div>
+    <div class="search-container">
+        <input type="text" class="search-bar" id="search" placeholder="Search from 50 videos...">
+    </div>
+    <div style="width:40px"></div>
+</nav>
+
+<div class="main-content">
+    <div class="chips">
+        <div class="chip active">All Videos</div>
+        <div class="chip">Nature</div>
+        <div class="chip">Cinematic</div>
+        <div class="chip">Technology</div>
+        <div class="chip">Travel</div>
+        <div class="chip">Sports</div>
+    </div>
+    <div class="video-grid" id="grid"></div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="player-box">
+        <span class="close-modal" id="close">&times;</span>
+        <div id="loader" class="loader"></div>
+        <video id="videoPlayer" controls>
+            <source src="" type="video/mp4">
+        </video>
+        <div class="video-desc">
+            <h2 id="m-title">Title</h2>
+            <p id="m-meta" class="v-stats"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sources = [
+        "https://vjs.zencdn.net/v/oceans.mp4",
+        "https://media.w3.org/2010/05/sintel/trailer.mp4",
+        "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+        "https://media.w3.org/2010/05/bunny/trailer.mp4"
+    ];
+
+    const titles = [
+        "Exploring the Deep Ocean", "The Sintel Chronicles", "Spring Flower Blooming", "Big Buck Bunny Adventure",
+        "Mountain Peaks 4K", "City Traffic Timelapse", "The Silent Forest", "Cyberpunk Atmosphere",
+        "Cooking with Fire", "Wildlife of Africa", "Abstract Neon Motion", "Modern Arch Designs",
+        "The Last Horizon", "Underwater Wonders", "Winter Wonderland", "Desert Mirage",
+        "Coding the Future", "Space Station View", "Coffee Brewing Art", "Vintage Film Texture",
+        "Macro World Study", "Extreme Biking", "Sunset Over Paris", "Rainy Night Mood",
+        "The Golden Hour", "Volcano Eruption", "Jungle Sounds", "Minimalist Living",
+        "The Tech Revolution", "Grand Canyon Walk", "Street Food Japan", "Piano Melodies",
+        "Skyscraper Heights", "Autumn Leaves", "Island Life", "Hidden Caves",
+        "Digital Dreams", "Arctic Discovery", "Ancient Stones", "Modern Dance",
+        "The Red Planet", "Baking Masterclass", "Yoga Flow", "Chess Masters",
+        "Electric Storm", "The Art of Wood", "Marble ASMR", "The Speed of Sound",
+        "Uncharted Territory", "Final Destination"
+    ];
+
+    const videos = [];
+    for (let i = 0; i < 50; i++) {
+        videos.push({
+            id: i,
+            title: titles[i],
+            url: sources[i % sources.length],
+            thumb: `https://picsum.photos/seed/${i + 50}/400/225`,
+            duration: "5:00",
+            views: (Math.random() * 900 + 10).toFixed(1) + "K views",
+            date: Math.floor(Math.random() * 11 + 1) + " months ago"
+        });
+    }
+
+    const grid = document.getElementById('grid');
+    const modal = document.getElementById('modal');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const loader = document.getElementById('loader');
+
+    function loadVideos(data) {
+        grid.innerHTML = '';
+        data.forEach(v => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="thumb-wrap">
+                    <img src="${v.thumb}" loading="lazy">
+                    <span class="dur">${v.duration}</span>
+                </div>
+                <div class="meta">
+                    <div class="v-title">${v.title}</div>
+                    <div class="v-stats">${v.views} • ${v.date}</div>
+                </div>
+            `;
+            card.onclick = () => openPlayer(v);
+            grid.appendChild(card);
+        });
+    }
+
+    function openPlayer(v) {
+        modal.style.display = 'flex';
+        loader.style.display = 'block';
+        videoPlayer.style.display = 'none';
+
+        document.getElementById('m-title').innerText = v.title;
+        document.getElementById('m-meta').innerText = `${v.views} • Released ${v.date}`;
+
+        videoPlayer.src = v.url;
+        videoPlayer.load();
+
+        videoPlayer.oncanplay = () => {
+            loader.style.display = 'none';
+            videoPlayer.style.display = 'block';
+            videoPlayer.play().catch(() => {});
+        };
+
+        videoPlayer.onerror = () => {
+            alert("Video source unreachable. Trying fallback...");
+            videoPlayer.src = "https://www.w3schools.com/html/mov_bbb.mp4";
+            videoPlayer.load();
+        };
+    }
+
+    document.getElementById('close').onclick = () => {
+        modal.style.display = 'none';
+        videoPlayer.pause();
+    };
+
+    document.getElementById('search').oninput = (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = videos.filter(v => v.title.toLowerCase().includes(query));
+        loadVideos(filtered);
+    };
+
+    loadVideos(videos);
+</script>
+
+</body>
+</html>
